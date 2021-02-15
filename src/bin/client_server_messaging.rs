@@ -120,8 +120,7 @@ async fn main() {
 
                                 println!(
                                     "client-sender-{} send message: {:?}",
-                                    number,
-                                    message_string
+                                    number, message_string
                                 );
                             }
 
@@ -172,8 +171,7 @@ async fn main() {
                                 Err(e) => {
                                     eprintln!(
                                         "client-receiver-{} failed to receive message: {}",
-                                        number,
-                                        e
+                                        number, e
                                     );
                                     continue 'client_receive_messages;
                                 }
@@ -187,8 +185,7 @@ async fn main() {
 
                             println!(
                                 "client-receiver-{} incoming message: {:?}",
-                                number,
-                                message_string
+                                number, message_string
                             );
                         }
                     });
