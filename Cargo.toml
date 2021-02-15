@@ -8,8 +8,6 @@ edition = "2018"
 
 [dependencies]
 bytes = "0.5.6"
-env_logger = "0.8.2"
-log = "0.4.14"
 lazy_static = "1.4.0"
 rand = "0.8.3"
 serde = { version = "1.0.123", features = ["derive"] }
