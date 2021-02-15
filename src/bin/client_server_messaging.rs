@@ -38,8 +38,8 @@ const COMMANDS_SEND_TIMEOUT_MILLIS: u64 = 1000;
 const MPSC_CHANNEL_BUFFER_SIZE: usize = 10;
 const MESSAGE_CONTENT_LENGTH: usize = 32;
 
-const ROUTER_READINESS_KEY_DEFAULT: &str = "unset";
-const ROUTER_READINESS_KEY_READY: &str = "set";
+const ROUTER_READINESS_KEY_DEFAULT: usize = 0;
+const ROUTER_READINESS_KEY_READY: usize = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct RequestData {
@@ -49,7 +49,7 @@ struct RequestData {
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     // Some supporting variables.
-    let (router_socket_ready_sender, router_socket_ready_receiver) =
+    let (start_messaging_notifier_sender, start_messaging_notifier_receiver) =
         watch::channel(ROUTER_READINESS_KEY_DEFAULT);
     let (services_rep_sockets_ready_sender, mut services_rep_sockets_ready_receiver) =
         mpsc::channel::<()>(MPSC_CHANNEL_BUFFER_SIZE);
@@ -77,7 +77,8 @@ async fn main() {
     // Init client sender sockets in separate threads.
     for number in 1..=SERVICES_COUNT {
         let builder = thread::Builder::new().name(format!("client-sender-{}", number));
-        let mut cloned_router_socket_ready_receiver = router_socket_ready_receiver.clone();
+        let mut cloned_start_messaging_notifier_receiver =
+            start_messaging_notifier_receiver.clone();
 
         builder
             .spawn(move || {
@@ -97,7 +98,7 @@ async fn main() {
 
                         println!("init client-sender-{}", number);
 
-                        cloned_router_socket_ready_receiver
+                        cloned_start_messaging_notifier_receiver
                             .changed()
                             .await
                             .expect("failed to get signal about router socket set up.");
@@ -206,7 +207,7 @@ async fn main() {
     }
 
     // Notify to start messaging.
-    router_socket_ready_sender
+    start_messaging_notifier_sender
         .send(ROUTER_READINESS_KEY_READY)
         .expect("failed to send signal abount subscriber set up.");
 
