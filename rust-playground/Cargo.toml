@@ -11,6 +11,6 @@ bytes = "0.5.6"
 lazy_static = "1.4.0"
 rand = "0.8.3"
 serde = { version = "1.0.123", features = ["derive"] }
-serde_json = "1.0.61"
-tokio = { version = "1", features = ["full"] }
+serde_json = "1.0.62"
+tokio = { version = "1.2.0", features = ["full"] }
 zeromq = { git = "https://github.com/zeromq/zmq.rs", rev = "511240ec65baa585e06ff9d35b51b6aca0ae0579" }
