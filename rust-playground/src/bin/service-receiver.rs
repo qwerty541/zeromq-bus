@@ -22,12 +22,12 @@ async fn main() {
 
     println!("receiver connected");
 
-    'client_receive_messages: loop {
+    'receive_messages: loop {
         let mut message = match rep_socket.recv().await {
             Ok(message) => message.into_vecdeque(),
             Err(e) => {
                 eprintln!("failed to receive message: {}", e);
-                continue 'client_receive_messages;
+                continue 'receive_messages;
             }
         };
         let message_bytes = message
