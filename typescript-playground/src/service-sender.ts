@@ -5,7 +5,7 @@ import {
     send_commands_timeout_millis,
     RequestData,
     format_endpoint,
-    server_router_socket_addr
+    server_router_socket_addr,
 } from "./helpers";
 
 export async function run_sender(server_router_socket_addr: string) {
@@ -19,7 +19,7 @@ export async function run_sender(server_router_socket_addr: string) {
 
     for (;;) {
         let message_string = JSON.stringify(
-            new RequestData(Math.random().toString(message_content_length))
+            new RequestData(Math.random().toString(message_content_length)),
         );
         await sender.send(message_string);
         console.log(`Send message: ${message_string}`);
@@ -28,4 +28,4 @@ export async function run_sender(server_router_socket_addr: string) {
     }
 }
 
-run_sender(server_router_socket_addr).catch(e => console.error(e));
+run_sender(server_router_socket_addr).catch((e) => console.error(e));

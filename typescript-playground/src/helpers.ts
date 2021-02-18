@@ -12,9 +12,7 @@ export class RequestData {
 }
 
 export function sleep(millis: number): Promise<void> {
-    return new Promise((resolve) =>
-        setTimeout(resolve, millis)
-    );
+    return new Promise((resolve) => setTimeout(resolve, millis));
 }
 
 export function format_endpoint(endpoint: string): string {

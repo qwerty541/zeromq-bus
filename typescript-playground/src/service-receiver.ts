@@ -17,4 +17,4 @@ async function run_receiver(server_publisher_socket_addr: string) {
     }
 }
 
-run_receiver(server_publisher_socket_addr).catch(e => console.error(e));
+run_receiver(server_publisher_socket_addr).catch((e) => console.error(e));
