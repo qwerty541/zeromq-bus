@@ -1,5 +1,5 @@
 [package]
-name = "ocp-zmq-socket-holder"
+name = "rust-playground"
 version = "0.1.0"
 authors = ["Alexandr <qwerty541zxc@gmail.com>"]
 edition = "2018"

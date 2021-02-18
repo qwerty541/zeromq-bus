@@ -452,19 +452,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ocp-zmq-socket-holder"
-version = "0.1.0"
-dependencies = [
- "bytes 0.5.6",
- "lazy_static",
- "rand 0.8.3",
- "serde",
- "serde_json",
- "tokio",
- "zeromq",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -676,6 +663,19 @@ name = "regex-syntax"
 version = "0.6.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5eb417147ba9860a96cfe72a0b93bf88fee1744b5636ec99ab20c1aa9376581"
+
+[[package]]
+name = "rust-playground"
+version = "0.1.0"
+dependencies = [
+ "bytes 0.5.6",
+ "lazy_static",
+ "rand 0.8.3",
+ "serde",
+ "serde_json",
+ "tokio",
+ "zeromq",
+]
 
 [[package]]
 name = "ryu"

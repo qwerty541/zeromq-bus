@@ -1,1 +1,1 @@
-Playground for learning rust implementation of ZeroMQ
+Playground for experimentation with different implementations of ZeroMQ
