@@ -18,7 +18,7 @@ async fn main() {
         .await
         .expect("failed to bind server router socket");
 
-    println!("init server server router socket");
+    println!("init server router socket");
 
     // Init server publisher socket.
     let mut x_pub_socket = PubSocket::new();
@@ -28,7 +28,7 @@ async fn main() {
         .await
         .expect("failed to bind server publisher socket");
 
-    println!("init server server publisher socket");
+    println!("init server publisher socket");
 
     // Messages processing loop.
     'receive_messages: loop {
