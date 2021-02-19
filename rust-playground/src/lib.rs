@@ -12,7 +12,7 @@ lazy_static::lazy_static! {
 
 pub const COMMANDS_SEND_TIMEOUT_MILLIS: u64 = 1000;
 pub const MESSAGE_CONTENT_LENGTH: usize = 16;
-pub const COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEIUT: usize = 1;
+pub const COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEIUT: usize = 10;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RequestData {
