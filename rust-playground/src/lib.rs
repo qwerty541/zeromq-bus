@@ -12,12 +12,12 @@ lazy_static::lazy_static! {
 
 pub const COMMANDS_SEND_TIMEOUT_MILLIS: u64 = 1000;
 pub const MESSAGE_CONTENT_LENGTH: usize = 16;
-pub const COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEIUT: usize = 10;
+pub const COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEIUT: usize = 1;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct RequestData {
-    pub content: String,
-}
+mod helpers;
+pub use helpers::RequestData;
+pub use helpers::NoRequiredDataError;
+pub use helpers::format_zmq_message;
 
 pub use __format_endpoint as format_endpoint;
 pub use __SERVER_PUBLISHER_SOCKET_ADDR as SERVER_PUBLISHER_SOCKET_ADDR;

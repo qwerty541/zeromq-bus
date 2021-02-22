@@ -1,4 +1,4 @@
-use bytes::Buf;
+use rust_playground::format_zmq_message;
 use rust_playground::SERVER_PUBLISHER_SOCKET_ADDR;
 use zeromq::Socket;
 use zeromq::SocketRecv;
@@ -23,17 +23,16 @@ async fn main() {
     println!("receiver connected");
 
     'receive_messages: loop {
-        let mut message = match rep_socket.recv().await {
-            Ok(message) => message.into_vecdeque(),
+        let message = match rep_socket.recv().await {
+            Ok(message) => message,
             Err(e) => {
                 eprintln!("failed to receive message: {}", e);
                 continue 'receive_messages;
             }
         };
-        let message_bytes = message
-            .pop_back()
-            .expect("rep socket received message without required data.");
-        let message_string = unsafe { String::from_utf8_unchecked(message_bytes.bytes().to_vec()) };
+        let message_string = unsafe {
+            format_zmq_message(message).expect("server received message without required data.")
+        };
 
         println!("incoming message: {:?}", message_string);
     }
