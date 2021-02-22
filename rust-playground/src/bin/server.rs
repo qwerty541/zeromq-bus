@@ -48,7 +48,7 @@ async fn main() {
     println!("running messages processing loop");
 
     // Messages processing loop.
-    'receive_messages: loop {
+    'messages_processing: loop {
         let mut is_errored_message = false;
         let message = select! {
             maybe_message = router_socket.recv().fuse() => {
@@ -56,7 +56,7 @@ async fn main() {
                     Ok(message) => message,
                     Err(e) => {
                         eprintln!("router socket failed to receive message: {}", e);
-                        continue 'receive_messages;
+                        continue 'messages_processing;
                     },
                 }
             },
