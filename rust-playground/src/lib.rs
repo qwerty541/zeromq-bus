@@ -15,9 +15,9 @@ pub const MESSAGE_CONTENT_LENGTH: usize = 16;
 pub const COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEIUT: usize = 1;
 
 mod helpers;
-pub use helpers::RequestData;
-pub use helpers::NoRequiredDataError;
 pub use helpers::format_zmq_message;
+pub use helpers::NoRequiredDataError;
+pub use helpers::RequestData;
 
 pub use __format_endpoint as format_endpoint;
 pub use __SERVER_PUBLISHER_SOCKET_ADDR as SERVER_PUBLISHER_SOCKET_ADDR;
