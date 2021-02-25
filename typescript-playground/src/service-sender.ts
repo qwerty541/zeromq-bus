@@ -8,7 +8,7 @@ import {
 } from "./helpers";
 import { RequestData } from "./requestData";
 
-export async function run_sender(server_router_socket_addr: string) {
+async function run_sender(server_router_socket_addr: string) {
     const sender = new zeromq.Dealer();
 
     console.log("init sender");
