@@ -1,12 +1,13 @@
 use bytes::Buf;
+use schemafy::schemafy;
 use serde::Deserialize;
 use serde::Serialize;
 use zeromq::ZmqMessage;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RequestData {
-    pub content: String,
-}
+schemafy!(
+    root: RequestData
+    "../shared/schemas/request-data.schema.json"
+);
 
 #[derive(Debug, Clone, Copy)]
 pub struct NoRequiredDataError;

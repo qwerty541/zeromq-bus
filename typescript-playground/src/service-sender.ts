@@ -3,10 +3,10 @@ import {
     sleep,
     message_content_length,
     send_commands_timeout_millis,
-    RequestData,
     format_endpoint,
     server_router_socket_addr,
 } from "./helpers";
+import { RequestData } from "./requestData";
 
 export async function run_sender(server_router_socket_addr: string) {
     const sender = new zeromq.Dealer();
@@ -18,10 +18,13 @@ export async function run_sender(server_router_socket_addr: string) {
     console.log("sender connected");
 
     for (;;) {
-        let message_string = JSON.stringify(
-            new RequestData(Math.random().toString(message_content_length)),
-        );
+        let message_data: RequestData = {
+            content: Math.random().toString(message_content_length)
+        };
+        let message_string = JSON.stringify(message_data);
+
         await sender.send(message_string);
+
         console.log(`Send message: ${message_string}`);
 
         await sleep(send_commands_timeout_millis);

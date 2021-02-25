@@ -19,12 +19,14 @@ async fn main() {
     let mut sender = DealerSocket::new();
     let mut rng = thread_rng();
 
+    println!("init sender");
+
     sender
         .connect(SERVER_ROUTER_SOCKET_ADDR.as_str())
         .await
         .expect("failed to connect to server router socket.");
 
-    println!("init sender");
+    println!("sender connected");
 
     loop {
         for _ in 1..=COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEIUT {
