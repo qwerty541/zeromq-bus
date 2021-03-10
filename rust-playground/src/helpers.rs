@@ -2,7 +2,26 @@ use bytes::Buf;
 use schemafy::schemafy;
 use serde::Deserialize;
 use serde::Serialize;
+use std::time::Instant;
+use zeromq::PubSocket;
 use zeromq::ZmqMessage;
+
+pub struct ServerPublisherData {
+    pub socket: PubSocket,
+    pub last_action_time: Instant,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum MessageKind {
+    Incoming,
+    Errored,
+}
+
+impl Default for MessageKind {
+    fn default() -> Self {
+        Self::Incoming
+    }
+}
 
 schemafy!(
     root: RequestData
