@@ -1,12 +1,13 @@
 import * as zeromq from "zeromq";
 import {
     sleep,
-    message_content_length,
+    // message_content_length,
     send_commands_timeout_millis,
     format_endpoint,
     server_router_socket_addr,
+    count_of_commands_that_should_be_sended_every_timeout,
 } from "./helpers";
-import { RequestData } from "./requestData";
+// import { RequestData } from "./requestData";
 
 async function run_sender(server_router_socket_addr: string) {
     const sender = new zeromq.Dealer();
@@ -17,15 +18,23 @@ async function run_sender(server_router_socket_addr: string) {
 
     console.log("sender connected");
 
+    let total_sended = 0;
     for (;;) {
-        let message_data: RequestData = {
-            content: Math.random().toString(message_content_length)
-        };
-        let message_string = JSON.stringify(message_data);
+        // let message_data: RequestData = {
+        //     content: Math.random().toString(message_content_length),
+        // };
+        // let message_string = JSON.stringify(message_data);
 
-        await sender.send(message_string);
+        for (let i = 0; i < count_of_commands_that_should_be_sended_every_timeout; i++) {
+            await sender.send("");
+        }
 
-        console.log(`Send message: ${message_string}`);
+        total_sended += count_of_commands_that_should_be_sended_every_timeout;
+
+        let date = new Date();
+        console.log(
+            `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()} | total sended ${total_sended} messages`,
+        );
 
         await sleep(send_commands_timeout_millis);
     }
