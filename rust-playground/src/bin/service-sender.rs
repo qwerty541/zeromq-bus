@@ -58,12 +58,12 @@ async fn main() {
 
         total_sended += COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
 
-        sleep(Duration::from_millis(COMMANDS_SEND_TIMEOUT_MILLIS)).await;
-
         log::debug!(
             "{:?} | total sended {} messages",
             SystemTime::now(),
             total_sended
         );
+
+        sleep(Duration::from_millis(COMMANDS_SEND_TIMEOUT_MILLIS)).await;
     }
 }
