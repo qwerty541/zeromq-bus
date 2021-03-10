@@ -28,7 +28,7 @@ async fn main() {
         rep_socket
             .subscribe("")
             .await
-            .expect("failed to subscriner to server dealer");
+            .expect("failed to subscribe to server dealer");
     }
 
     log::debug!("receiver connected to all publishers");
