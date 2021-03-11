@@ -74,7 +74,12 @@ fn main() {
             x_pub_socket
                 .bind(publisher_addr.as_str())
                 .await
-                .expect("failed to bind server publisher socket");
+                .unwrap_or_else(|error| {
+                    panic!(
+                        "binding server publisher socket on '{}' failed with: {}",
+                        publisher_addr, error
+                    )
+                });
 
             publishers.push(ServerPublisherData {
                 socket: x_pub_socket,

@@ -1,3 +1,4 @@
+use core::panic;
 // use rust_playground::format_zmq_message;
 use rust_playground::COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
 use rust_playground::SERVER_PUBLISHER_SOCKET_ADDRS;
@@ -23,12 +24,19 @@ async fn main() {
         rep_socket
             .connect(publisher_addr.as_str())
             .await
-            .expect("failed to connect to server dealer socket.");
+            .unwrap_or_else(|error| {
+                panic!(
+                    "connection to server dealer socket '{}' failed with: {}",
+                    publisher_addr, error
+                )
+            });
 
-        rep_socket
-            .subscribe("")
-            .await
-            .expect("failed to subscribe to server dealer");
+        rep_socket.subscribe("").await.unwrap_or_else(|error| {
+            panic!(
+                "subscription to server dealer socket '{}' failed with: {}",
+                publisher_addr, error
+            )
+        });
     }
 
     log::debug!("receiver connected to all publishers");
