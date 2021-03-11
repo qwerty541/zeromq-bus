@@ -14,16 +14,17 @@ lazy_static::lazy_static! {
     ];
 }
 
-pub const COMMANDS_SEND_TIMEOUT_MILLIS: u64 = 1_000;
+pub const ZEROMQ_MESSAGE_SEND_TIMEOUT_MILLIS: u64 = 1_000;
 pub const MESSAGE_CONTENT_LENGTH: usize = 16;
-pub const COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT: usize = 30_000;
+pub const COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT: usize = 30_000;
+pub const COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT: usize = 200_000;
+pub const ZEROMQ_FFI_FLAG: i32 = 0;
 
 mod helpers;
 pub use helpers::format_zmq_message;
 pub use helpers::MessageKind;
 pub use helpers::NoRequiredDataError;
 pub use helpers::RequestData;
-pub use helpers::ServerPublisherData;
 
 pub use __format_endpoint as format_endpoint;
 pub use __SERVER_PUBLISHER_SOCKET_ADDRS as SERVER_PUBLISHER_SOCKET_ADDRS;

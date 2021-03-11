@@ -1,5 +1,5 @@
 // use rust_playground::format_zmq_message;
-use rust_playground::COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
+use rust_playground::COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
 use rust_playground::SERVER_PUBLISHER_SOCKET_ADDRS;
 use std::time::SystemTime;
 use zeromq::Socket;
@@ -49,7 +49,7 @@ async fn main() {
 
         total_received += 1;
 
-        if total_received % COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT == 0 {
+        if total_received % COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT == 0 {
             log::debug!(
                 "{:?} | received {} messages",
                 SystemTime::now(),

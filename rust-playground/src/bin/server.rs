@@ -1,11 +1,11 @@
 #![recursion_limit = "1024"]
 
+use core::panic;
 use futures::select;
 use futures::FutureExt;
 use lazy_static::lazy_static;
 use rust_playground::MessageKind;
-use rust_playground::ServerPublisherData;
-use rust_playground::COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
+use rust_playground::COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
 use rust_playground::SERVER_PUBLISHER_SOCKET_ADDRS;
 use rust_playground::SERVER_ROUTER_SOCKET_ADDR;
 use std::iter::Iterator;
@@ -24,6 +24,11 @@ use zeromq::ZmqResult;
 
 lazy_static! {
     static ref INIT_TIME: Instant = Instant::now();
+}
+
+struct ServerPublisherData {
+    socket: PubSocket,
+    last_action_time: Instant,
 }
 
 fn main() {
@@ -144,7 +149,7 @@ fn main() {
                         sended_messages_count += 1;
 
                         if sended_messages_count
-                            % COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT
+                            % COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT
                             == 0
                         {
                             log::debug!(
@@ -158,7 +163,7 @@ fn main() {
                         sended_errored_messages_count += 1;
 
                         if sended_errored_messages_count
-                            % COUNT_OF_COMMANDS_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT
+                            % COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT
                             == 0
                         {
                             log::debug!(
