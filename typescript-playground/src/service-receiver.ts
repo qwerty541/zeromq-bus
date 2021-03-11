@@ -2,7 +2,7 @@ import * as zeromq from "zeromq";
 import {
     format_endpoint,
     server_publisher_socket_addrs,
-    count_of_commands_that_should_be_sended_every_timeout,
+    count_of_messages_that_should_be_sended_every_timeout,
 } from "./helpers";
 
 async function run_receiver(server_publisher_socket_addrs: Array<string>) {
@@ -22,7 +22,7 @@ async function run_receiver(server_publisher_socket_addrs: Array<string>) {
         await receiver.receive();
         total_received++;
 
-        if (total_received % count_of_commands_that_should_be_sended_every_timeout == 0) {
+        if (total_received % count_of_messages_that_should_be_sended_every_timeout == 0) {
             let date = new Date();
             console.log(
                 `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()} | received ${total_received} message`,

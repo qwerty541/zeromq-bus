@@ -2,10 +2,10 @@ import * as zeromq from "zeromq";
 import {
     sleep,
     // message_content_length,
-    send_commands_timeout_millis,
+    send_messages_timeout_millis,
     format_endpoint,
     server_router_socket_addr,
-    count_of_commands_that_should_be_sended_every_timeout,
+    count_of_messages_that_should_be_sended_every_timeout,
 } from "./helpers";
 // import { RequestData } from "./requestData";
 
@@ -25,18 +25,18 @@ async function run_sender(server_router_socket_addr: string) {
         // };
         // let message_string = JSON.stringify(message_data);
 
-        for (let i = 0; i < count_of_commands_that_should_be_sended_every_timeout; i++) {
+        for (let i = 0; i < count_of_messages_that_should_be_sended_every_timeout; i++) {
             await sender.send("");
         }
 
-        total_sended += count_of_commands_that_should_be_sended_every_timeout;
+        total_sended += count_of_messages_that_should_be_sended_every_timeout;
 
         let date = new Date();
         console.log(
             `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()} | total sended ${total_sended} messages`,
         );
 
-        await sleep(send_commands_timeout_millis);
+        await sleep(send_messages_timeout_millis);
     }
 }
 
