@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use rust_playground::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
 use rust_playground::SERVER_PUBLISHER_SOCKET_ADDRS;
 use rust_playground::SERVER_ROUTER_SOCKET_ADDR;
-use rust_playground::ZEROMQ_FFI_FLAG;
+use rust_playground::ZEROMQ_FFI_ZERO_FLAG;
 use std::iter::Iterator;
 use std::time::Duration;
 use std::time::Instant;
@@ -12,6 +12,7 @@ use zeromq_ffi::Context;
 use zeromq_ffi::Message;
 use zeromq_ffi::Socket;
 use zeromq_ffi::SocketType;
+use zeromq_ffi::SNDMORE;
 use zmq as zeromq_ffi;
 
 lazy_static! {
@@ -78,11 +79,10 @@ fn main() {
         let mut message = Message::new();
 
         router_socket
-            .recv(&mut message, ZEROMQ_FFI_FLAG)
+            .recv(&mut message, ZEROMQ_FFI_ZERO_FLAG)
             .expect("failed to recv message");
 
-        let is_part_of_message = message.get_more();
-
+        let should_send_more_parts = message.get_more();
         let mut index_of_publisher_that_will_be_used = 0;
         let mut max_duration_since_last_action = Duration::from_nanos(0_u64);
 
@@ -102,10 +102,17 @@ fn main() {
 
         publishers[index_of_publisher_that_will_be_used]
             .socket
-            .send(message, ZEROMQ_FFI_FLAG)
+            .send(
+                message,
+                if should_send_more_parts {
+                    SNDMORE
+                } else {
+                    ZEROMQ_FFI_ZERO_FLAG
+                },
+            )
             .expect("failed to send message");
 
-        if !is_part_of_message {
+        if should_send_more_parts {
             sended_messages_count += 1;
 
             if sended_messages_count
@@ -113,7 +120,7 @@ fn main() {
                 == 0
             {
                 log::debug!(
-                    "{:?} | server send {} messages",
+                    "{:?} | server processed {} messages",
                     SystemTime::now(),
                     sended_messages_count
                 );

@@ -1,7 +1,7 @@
 use core::panic;
 use rust_playground::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
 use rust_playground::SERVER_PUBLISHER_SOCKET_ADDRS;
-use rust_playground::ZEROMQ_FFI_FLAG;
+use rust_playground::ZEROMQ_FFI_ZERO_FLAG;
 use std::time::SystemTime;
 use zeromq_ffi::Context;
 use zeromq_ffi::Message;
@@ -45,16 +45,12 @@ fn main() {
     log::debug!("receiver connected to all publishers");
 
     let mut total_received = 0;
-    'receive_messages: loop {
+    loop {
         let mut message = Message::new();
 
-        match socket.recv(&mut message, ZEROMQ_FFI_FLAG) {
-            Ok(()) => (),
-            Err(e) => {
-                log::error!("failed to receive message: {}", e);
-                continue 'receive_messages;
-            }
-        };
+        socket
+            .recv(&mut message, ZEROMQ_FFI_ZERO_FLAG)
+            .expect("failed to receive message");
 
         if !message.get_more() {
             total_received += 1;

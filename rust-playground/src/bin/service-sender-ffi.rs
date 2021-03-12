@@ -1,8 +1,14 @@
+use rand::distributions::Alphanumeric;
+use rand::thread_rng;
+use rand::Rng;
+use rust_playground::RequestData;
 use rust_playground::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
+use rust_playground::MESSAGE_CONTENT_LENGTH;
 use rust_playground::SERVER_ROUTER_SOCKET_ADDR;
-use rust_playground::ZEROMQ_FFI_FLAG;
+use rust_playground::ZEROMQ_FFI_ZERO_FLAG;
 use rust_playground::ZEROMQ_MESSAGE_SEND_TIMEOUT_MILLIS;
 use std::convert::From;
+use std::iter;
 use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
@@ -20,6 +26,9 @@ fn main() {
         .expect("failed to initialize environment logger");
 
     let context = Context::new();
+    let mut rng = thread_rng();
+
+    log::debug!("init supported variables");
 
     let sender = context
         .socket(SocketType::DEALER)
@@ -35,9 +44,18 @@ fn main() {
 
     let mut total_sended = 0;
     loop {
+        let message_string = serde_json::json!(RequestData {
+            content: iter::repeat(())
+                .map(|()| rng.sample(Alphanumeric))
+                .map(char::from)
+                .take(MESSAGE_CONTENT_LENGTH)
+                .collect()
+        })
+        .to_string();
+
         for _ in 1..=COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT {
             sender
-                .send(Message::from(Vec::new()), ZEROMQ_FFI_FLAG)
+                .send(Message::from(message_string.as_str()), ZEROMQ_FFI_ZERO_FLAG)
                 .expect("client-sender failed to send message");
         }
 
