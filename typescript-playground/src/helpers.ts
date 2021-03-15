@@ -7,7 +7,7 @@ export const server_publisher_socket_addrs: Array<string> = [
     "0.0.0.0:56739",
     "0.0.0.0:56740",
     "0.0.0.0:56741",
-    "0.0.0.0:56742"
+    "0.0.0.0:56742",
 ];
 
 export function sleep(millis: number): Promise<void> {
