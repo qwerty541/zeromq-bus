@@ -21,7 +21,7 @@ async function run_sender(server_router_socket_addr: string) {
     let total_sended = 0;
     for (;;) {
         let message_data: RequestData = {
-            content: [...Array(message_content_length)].map(i=>(~~(Math.random()*36)).toString(36)).join(''),
+            content: [...Array(message_content_length)].map(()=>(~~(Math.random()*36)).toString(36)).join(''),
         };
         let message_string = JSON.stringify(message_data);
 
