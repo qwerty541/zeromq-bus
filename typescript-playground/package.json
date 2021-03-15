@@ -7,7 +7,7 @@
         "run-sender": "ts-node -P tsconfig.json src/service-sender.ts",
         "run-receiver": "ts-node -P tsconfig.json src/service-receiver.ts",
         "format": "prettier --write ./src/",
-        "compile-schema": "json2ts -i ../shared/schemas/request-data.schema.json -o ./src/requestData.d.ts"
+        "compile-schema": "json2ts -i ../shared/schemas/request-data.schema.json -o ./src/types/requestData.d.ts"
     },
     "dependencies": {
         "@types/node": "14.14.34",

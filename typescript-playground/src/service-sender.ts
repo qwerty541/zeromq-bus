@@ -7,7 +7,7 @@ import {
     server_router_socket_addr,
     count_of_messages_that_should_be_sended_every_timeout,
 } from "./helpers";
-import { RequestData } from "./requestData";
+import { RequestData } from "./types/requestData";
 
 async function run_sender(server_router_socket_addr: string) {
     const sender = new zeromq.Dealer();
