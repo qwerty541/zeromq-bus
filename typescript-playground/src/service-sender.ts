@@ -1,13 +1,13 @@
 import * as zeromq from "zeromq";
 import {
     sleep,
-    // message_content_length,
+    message_content_length,
     send_messages_timeout_millis,
     format_endpoint,
     server_router_socket_addr,
     count_of_messages_that_should_be_sended_every_timeout,
 } from "./helpers";
-// import { RequestData } from "./requestData";
+import { RequestData } from "./requestData";
 
 async function run_sender(server_router_socket_addr: string) {
     const sender = new zeromq.Dealer();
@@ -20,13 +20,13 @@ async function run_sender(server_router_socket_addr: string) {
 
     let total_sended = 0;
     for (;;) {
-        // let message_data: RequestData = {
-        //     content: Math.random().toString(message_content_length),
-        // };
-        // let message_string = JSON.stringify(message_data);
+        let message_data: RequestData = {
+            content: Math.random().toString(message_content_length),
+        };
+        let message_string = JSON.stringify(message_data);
 
         for (let i = 0; i < count_of_messages_that_should_be_sended_every_timeout; i++) {
-            await sender.send("");
+            await sender.send(message_string);
         }
 
         total_sended += count_of_messages_that_should_be_sended_every_timeout;
