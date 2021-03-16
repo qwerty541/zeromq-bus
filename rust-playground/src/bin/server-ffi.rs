@@ -1,9 +1,12 @@
 use core::panic;
 use lazy_static::lazy_static;
+use rust_playground::MessageKind;
 use rust_playground::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
 use rust_playground::SERVER_PUBLISHER_SOCKET_ADDRS;
 use rust_playground::SERVER_ROUTER_SOCKET_ADDR;
 use rust_playground::ZEROMQ_FFI_ZERO_FLAG;
+use std::collections::VecDeque;
+use std::convert::From;
 use std::iter::Iterator;
 use std::time::Duration;
 use std::time::Instant;
@@ -32,11 +35,12 @@ fn main() {
         .expect("failed to initialize environment logger");
 
     let mut sended_messages_count: usize = 0;
+    let mut sended_errored_messages_count: usize = 0;
     let _ = *INIT_TIME;
+    let context = Context::new();
+    let mut errored_messages_buffer: VecDeque<Message> = VecDeque::new();
 
     log::debug!("init supported variables");
-
-    let context = Context::new();
 
     let router_socket = context
         .socket(SocketType::ROUTER)
@@ -76,11 +80,19 @@ fn main() {
     log::debug!("running messages processing loop");
 
     loop {
-        let mut message = Message::new();
+        let mut message_kind = MessageKind::default();
+        let message = if let Some(errored_message) = errored_messages_buffer.pop_front() {
+            message_kind = MessageKind::Errored;
+            errored_message
+        } else {
+            let mut message = Message::new();
 
-        router_socket
-            .recv(&mut message, ZEROMQ_FFI_ZERO_FLAG)
-            .expect("failed to recv message");
+            router_socket
+                .recv(&mut message, ZEROMQ_FFI_ZERO_FLAG)
+                .expect("failed to recv message");
+
+            message
+        };
 
         let should_send_more_parts = message.get_more();
         let mut index_of_publisher_that_will_be_used = 0;
@@ -100,30 +112,50 @@ fn main() {
             }
         }
 
-        publishers[index_of_publisher_that_will_be_used]
+        let bytes_slice_cloned_from_message = &*message;
+        let cloned_message = Message::from(bytes_slice_cloned_from_message);
+
+        match publishers[index_of_publisher_that_will_be_used]
             .socket
             .send(
-                message,
+                cloned_message,
                 if should_send_more_parts {
                     SNDMORE
                 } else {
                     ZEROMQ_FFI_ZERO_FLAG
                 },
-            )
-            .expect("failed to send message");
+            ) {
+            Ok(()) => {
+                if !should_send_more_parts {
+                    match message_kind {
+                        MessageKind::Incoming => {
+                            sended_messages_count += 1;
+                        }
+                        MessageKind::Errored => {
+                            sended_errored_messages_count += 1;
+                        }
+                    }
 
-        if should_send_more_parts {
-            sended_messages_count += 1;
+                    let total_processed = sended_messages_count + sended_errored_messages_count;
 
-            if sended_messages_count
-                % COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT
-                == 0
-            {
-                log::debug!(
-                    "{:?} | server processed {} messages",
-                    SystemTime::now(),
-                    sended_messages_count
-                );
+                    if total_processed
+                        % COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT
+                        == 0
+                    {
+                        log::debug!(
+                            "{:?} | server processed {} messages ({} incoming, {} errored)",
+                            SystemTime::now(),
+                            total_processed,
+                            sended_messages_count,
+                            sended_errored_messages_count
+                        );
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!("server failed to send message because of: {}", e);
+
+                errored_messages_buffer.push_back(message);
             }
         }
 

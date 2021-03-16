@@ -180,7 +180,7 @@ fn main() {
                     }
                 },
                 ZmqResult::Err(e) => {
-                    log::error!("server failed to send message: {}", e);
+                    log::error!("server failed to send message because of: {}", e);
 
                     errored_messages_channel_sender
                         .send(message)
