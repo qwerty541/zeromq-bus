@@ -149,36 +149,29 @@ fn main() {
                 .send(message.clone())
                 .await
             {
-                ZmqResult::Ok(()) => match message_kind {
-                    MessageKind::Incoming => {
-                        sended_messages_count += 1;
-
-                        if sended_messages_count
-                            % COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT
-                            == 0
-                        {
-                            log::debug!(
-                                "{:?} | server send {} messages",
-                                SystemTime::now(),
-                                sended_messages_count
-                            );
+                ZmqResult::Ok(()) => {
+                    match message_kind {
+                        MessageKind::Incoming => {
+                            sended_messages_count += 1;
+                        }
+                        MessageKind::Errored => {
+                            sended_errored_messages_count += 1;
                         }
                     }
-                    MessageKind::Errored => {
-                        sended_errored_messages_count += 1;
+                    let total_processed = sended_messages_count + sended_errored_messages_count;
 
-                        if sended_errored_messages_count
-                            % COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT
-                            == 0
-                        {
-                            log::debug!(
-                                "{:?} | server send {} errored messages",
-                                SystemTime::now(),
-                                sended_errored_messages_count
-                            );
-                        }
+                    if total_processed % COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT
+                        == 0
+                    {
+                        log::debug!(
+                            "{:?} | server processed {} messages ({} incoming, {} errored)",
+                            SystemTime::now(),
+                            total_processed,
+                            sended_messages_count,
+                            sended_errored_messages_count
+                        );
                     }
-                },
+                }
                 ZmqResult::Err(e) => {
                     log::error!("server failed to send message because of: {}", e);
 
