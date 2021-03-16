@@ -11,6 +11,7 @@ use std::convert::From;
 use std::iter;
 use std::thread;
 use std::time::Duration;
+use std::time::Instant;
 use std::time::SystemTime;
 use zeromq_ffi::Context;
 use zeromq_ffi::Message;
@@ -18,7 +19,6 @@ use zeromq_ffi::SocketType;
 use zmq as zeromq_ffi;
 
 fn main() {
-    // Init environment logger.
     env_logger::builder()
         .is_test(true)
         .parse_filters("debug")
@@ -52,11 +52,12 @@ fn main() {
                 .collect()
         })
         .to_string();
+        let start_send = Instant::now();
 
         for _ in 1..=COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT {
             sender
                 .send(Message::from(message_string.as_str()), ZEROMQ_FFI_ZERO_FLAG)
-                .expect("client-sender failed to send message");
+                .expect("sender failed to send message");
         }
 
         total_sended += COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
@@ -67,6 +68,11 @@ fn main() {
             total_sended
         );
 
-        thread::sleep(Duration::from_millis(ZEROMQ_MESSAGE_SEND_TIMEOUT_MILLIS));
+        let send_duration = Instant::now().duration_since(start_send);
+        if let Some(left_duration) =
+            Duration::from_millis(ZEROMQ_MESSAGE_SEND_TIMEOUT_MILLIS).checked_sub(send_duration)
+        {
+            thread::sleep(left_duration);
+        }
     }
 }

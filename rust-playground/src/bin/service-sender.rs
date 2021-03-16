@@ -9,6 +9,7 @@ use rust_playground::ZEROMQ_MESSAGE_SEND_TIMEOUT_MILLIS;
 use std::convert::From;
 use std::iter;
 use std::time::Duration;
+use std::time::Instant;
 use std::time::SystemTime;
 use tokio::time::sleep;
 use zeromq::DealerSocket;
@@ -18,7 +19,6 @@ use zeromq::ZmqMessage;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    // Init environment logger.
     env_logger::builder()
         .is_test(true)
         .parse_filters("debug")
@@ -47,12 +47,13 @@ async fn main() {
                 .collect()
         })
         .to_string();
+        let start_send = Instant::now();
 
         for _ in 1..=COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT {
             sender
                 .send(ZmqMessage::from(message_string.as_str()))
                 .await
-                .expect("client-sender failed to send message");
+                .expect("sender failed to send message");
         }
 
         total_sended += COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
@@ -63,6 +64,11 @@ async fn main() {
             total_sended
         );
 
-        sleep(Duration::from_millis(ZEROMQ_MESSAGE_SEND_TIMEOUT_MILLIS)).await;
+        let send_duration = Instant::now().duration_since(start_send);
+        if let Some(left_duration) =
+            Duration::from_millis(ZEROMQ_MESSAGE_SEND_TIMEOUT_MILLIS).checked_sub(send_duration)
+        {
+            sleep(left_duration).await;
+        }
     }
 }
