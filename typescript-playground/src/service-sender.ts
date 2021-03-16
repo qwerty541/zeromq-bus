@@ -40,10 +40,10 @@ async function run_sender(server_router_socket_addr: string) {
         );
 
         let send_duration_millis = Date.now() - start_send_millis;
-        let difference_between_send_start_and_end_millis =
+        let difference_between_send_timeout_and_duration_millis =
             send_messages_timeout_millis - send_duration_millis;
-        if (difference_between_send_start_and_end_millis > 0) {
-            await sleep(difference_between_send_start_and_end_millis);
+        if (difference_between_send_timeout_and_duration_millis > 0) {
+            await sleep(difference_between_send_timeout_and_duration_millis);
         }
     }
 }
