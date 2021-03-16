@@ -26,6 +26,7 @@ async function run_sender(server_router_socket_addr: string) {
                 .join(""),
         };
         let message_string = JSON.stringify(message_data);
+        let start_send_millis = Date.now();
 
         for (let i = 0; i < count_of_messages_that_should_be_sended_every_timeout; i++) {
             await sender.send(message_string);
@@ -38,7 +39,11 @@ async function run_sender(server_router_socket_addr: string) {
             `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()} | total sended ${total_sended} messages`,
         );
 
-        await sleep(send_messages_timeout_millis);
+        let send_duration_millis = Date.now() - start_send_millis;
+        let difference_between_send_start_and_end_millis = send_messages_timeout_millis - send_duration_millis;
+        if (difference_between_send_start_and_end_millis > 0) {
+            await sleep(difference_between_send_start_and_end_millis);
+        }
     }
 }
 
