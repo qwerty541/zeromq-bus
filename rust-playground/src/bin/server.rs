@@ -1,3 +1,5 @@
+// select! macro used in messages processign loop relies on proc-macro-hack,
+// and require to set the compiler's recursion limit very high.
 #![recursion_limit = "1024"]
 
 use core::panic;
