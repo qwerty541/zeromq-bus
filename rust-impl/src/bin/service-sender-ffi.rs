@@ -4,7 +4,7 @@ use rand::Rng;
 use rust_impl::RequestData;
 use rust_impl::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
 use rust_impl::MESSAGE_CONTENT_LENGTH;
-use rust_impl::SERVER_ROUTER_SOCKET_ADDR;
+use rust_impl::BROADCASTER_ROUTER_SOCKET_ADDR;
 use rust_impl::ZEROMQ_FFI_ZERO_FLAG;
 use rust_impl::ZEROMQ_MESSAGE_SEND_TIMEOUT_MILLIS;
 use std::convert::From;
@@ -37,10 +37,10 @@ fn main() {
     log::debug!("init sender");
 
     sender
-        .connect(SERVER_ROUTER_SOCKET_ADDR.as_str())
-        .expect("failed to connect to server router socket.");
+        .connect(BROADCASTER_ROUTER_SOCKET_ADDR.as_str())
+        .expect("failed to connect to broadcaster router socket.");
 
-    log::debug!("sender connected");
+    log::debug!("sender has connected to broadcaster");
 
     let mut total_sended = 0;
     loop {

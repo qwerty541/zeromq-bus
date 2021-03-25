@@ -1,6 +1,6 @@
 use core::panic;
+use rust_impl::BROADCASTER_PUBLISHERS_SOCKET_ADDRS;
 use rust_impl::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
-use rust_impl::SERVER_PUBLISHER_SOCKET_ADDRS;
 use rust_impl::ZEROMQ_FFI_ZERO_FLAG;
 use std::time::SystemTime;
 use zeromq_ffi::Context;
@@ -24,25 +24,28 @@ fn main() {
 
     log::debug!("init receiver");
 
-    for publisher_addr in SERVER_PUBLISHER_SOCKET_ADDRS.iter() {
+    for publisher_addr in BROADCASTER_PUBLISHERS_SOCKET_ADDRS.iter() {
         socket
             .connect(publisher_addr.as_str())
             .unwrap_or_else(|error| {
                 panic!(
-                    "connection to server dealer socket '{}' failed with: {}",
+                    "connection to broadcaster dealer socket '{}' failed with: {}",
                     publisher_addr, error
                 )
             });
 
         socket.set_subscribe(b"").unwrap_or_else(|error| {
             panic!(
-                "subscription to server dealer socket '{}' failed with: {}",
+                "subscription to broadcaster dealer socket '{}' failed with: {}",
                 publisher_addr, error
             )
         });
     }
 
-    log::debug!("receiver connected to all publishers");
+    log::debug!(
+        "receiver has connected to all broadcaster publishers: {}",
+        BROADCASTER_PUBLISHERS_SOCKET_ADDRS.join(", ")
+    );
 
     let mut total_received = 0;
     loop {

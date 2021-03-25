@@ -6,8 +6,8 @@ macro_rules! __format_endpoint {
 }
 
 lazy_static::lazy_static! {
-    pub static ref __SERVER_ROUTER_SOCKET_ADDR: String = format_endpoint!("0.0.0.0:56731");
-    pub static ref __SERVER_PUBLISHER_SOCKET_ADDRS: Vec<String> = vec![
+    pub static ref __BROADCASTER_ROUTER_SOCKET_ADDR: String = format_endpoint!("0.0.0.0:56731");
+    pub static ref __BROADCASTER_PUBLISHERS_SOCKET_ADDRS: Vec<String> = vec![
         format_endpoint!("0.0.0.0:56738"),
         format_endpoint!("0.0.0.0:56739"),
         format_endpoint!("0.0.0.0:56740"),
@@ -29,5 +29,5 @@ pub use helpers::NoRequiredDataError;
 pub use helpers::RequestData;
 
 pub use __format_endpoint as format_endpoint;
-pub use __SERVER_PUBLISHER_SOCKET_ADDRS as SERVER_PUBLISHER_SOCKET_ADDRS;
-pub use __SERVER_ROUTER_SOCKET_ADDR as SERVER_ROUTER_SOCKET_ADDR;
+pub use __BROADCASTER_PUBLISHERS_SOCKET_ADDRS as BROADCASTER_PUBLISHERS_SOCKET_ADDRS;
+pub use __BROADCASTER_ROUTER_SOCKET_ADDR as BROADCASTER_ROUTER_SOCKET_ADDR;

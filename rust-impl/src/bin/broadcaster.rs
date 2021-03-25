@@ -7,9 +7,9 @@ use futures::select;
 use futures::FutureExt;
 use lazy_static::lazy_static;
 use rust_impl::MessageKind;
+use rust_impl::BROADCASTER_PUBLISHERS_SOCKET_ADDRS;
+use rust_impl::BROADCASTER_ROUTER_SOCKET_ADDR;
 use rust_impl::COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
-use rust_impl::SERVER_PUBLISHER_SOCKET_ADDRS;
-use rust_impl::SERVER_ROUTER_SOCKET_ADDR;
 use std::iter::Iterator;
 use std::time::Duration;
 use std::time::Instant;
@@ -28,7 +28,7 @@ lazy_static! {
     static ref INIT_TIME: Instant = Instant::now();
 }
 
-struct ServerPublisherData {
+struct BroadcasterPublisherData {
     socket: PubSocket,
     last_action_time: Instant,
 }
@@ -56,21 +56,32 @@ fn main() {
 
         log::debug!("init supported variables");
 
-        // Init server router socket.
+        // Init broadcaster router socket.
         let mut router_socket = RouterSocket::new();
 
+        log::debug!("init broadcaster router socket");
+
         router_socket
-            .bind(SERVER_ROUTER_SOCKET_ADDR.as_str())
+            .bind(BROADCASTER_ROUTER_SOCKET_ADDR.as_str())
             .await
-            .expect("failed to bind server router socket");
+            .unwrap_or_else(|error| {
+                panic!(
+                    "binding broadcaster router socket on {} failed with: {}",
+                    BROADCASTER_ROUTER_SOCKET_ADDR.as_str(),
+                    error
+                )
+            });
 
-        log::debug!("init server router socket");
+        log::debug!(
+            "broadcaster router socket binded on {}",
+            BROADCASTER_ROUTER_SOCKET_ADDR.as_str()
+        );
 
-        // Init server publisher sockets.
-        let mut publishers: Vec<ServerPublisherData> =
-            Vec::with_capacity(SERVER_PUBLISHER_SOCKET_ADDRS.len());
+        // Init broadcaster publisher sockets.
+        let mut publishers: Vec<BroadcasterPublisherData> =
+            Vec::with_capacity(BROADCASTER_PUBLISHERS_SOCKET_ADDRS.len());
 
-        for publisher_addr in SERVER_PUBLISHER_SOCKET_ADDRS.iter() {
+        for publisher_addr in BROADCASTER_PUBLISHERS_SOCKET_ADDRS.iter() {
             let mut x_pub_socket = PubSocket::new();
 
             x_pub_socket
@@ -78,18 +89,21 @@ fn main() {
                 .await
                 .unwrap_or_else(|error| {
                     panic!(
-                        "binding server publisher socket on '{}' failed with: {}",
+                        "binding broadcaster publisher socket on '{}' failed with: {}",
                         publisher_addr, error
                     )
                 });
 
-            publishers.push(ServerPublisherData {
+            publishers.push(BroadcasterPublisherData {
                 socket: x_pub_socket,
                 last_action_time: Instant::now(),
             });
         }
 
-        log::debug!("init server publisher sockets");
+        log::debug!(
+            "init broadcaster publisher sockets and binded on {}",
+            BROADCASTER_PUBLISHERS_SOCKET_ADDRS.join(", ")
+        );
 
         // Init channel for errored messages.
         let (errored_messages_channel_sender, mut errored_messages_channel_receiver) =
@@ -132,7 +146,7 @@ fn main() {
             let mut max_duration_since_last_action = Duration::from_nanos(0_u64);
             for (
                 index,
-                ServerPublisherData {
+                BroadcasterPublisherData {
                     last_action_time, ..
                 },
             ) in publishers.iter().enumerate()
@@ -166,7 +180,7 @@ fn main() {
                         == 0
                     {
                         log::debug!(
-                            "{:?} | server processed {} messages ({} incoming, {} errored)",
+                            "{:?} | processed {} messages\n ({} incoming, {} errored)",
                             SystemTime::now(),
                             total_processed,
                             sended_messages_count,
@@ -175,7 +189,7 @@ fn main() {
                     }
                 }
                 ZmqResult::Err(e) => {
-                    log::error!("server failed to send message because of: {}", e);
+                    log::error!("failed to send message because of: {}", e);
 
                     errored_messages_channel_sender
                         .send(message)
