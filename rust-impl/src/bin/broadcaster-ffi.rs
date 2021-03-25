@@ -1,10 +1,10 @@
 use core::panic;
 use lazy_static::lazy_static;
-use rust_playground::MessageKind;
-use rust_playground::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
-use rust_playground::SERVER_PUBLISHER_SOCKET_ADDRS;
-use rust_playground::SERVER_ROUTER_SOCKET_ADDR;
-use rust_playground::ZEROMQ_FFI_ZERO_FLAG;
+use rust_impl::MessageKind;
+use rust_impl::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
+use rust_impl::SERVER_PUBLISHER_SOCKET_ADDRS;
+use rust_impl::SERVER_ROUTER_SOCKET_ADDR;
+use rust_impl::ZEROMQ_FFI_ZERO_FLAG;
 use std::collections::VecDeque;
 use std::convert::From;
 use std::iter::Iterator;

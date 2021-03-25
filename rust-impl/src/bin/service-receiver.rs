@@ -1,6 +1,6 @@
 use core::panic;
-use rust_playground::COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
-use rust_playground::SERVER_PUBLISHER_SOCKET_ADDRS;
+use rust_impl::COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
+use rust_impl::SERVER_PUBLISHER_SOCKET_ADDRS;
 use std::time::SystemTime;
 use zeromq::Socket;
 use zeromq::SocketRecv;

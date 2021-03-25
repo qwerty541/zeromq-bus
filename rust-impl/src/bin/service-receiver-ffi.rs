@@ -1,7 +1,7 @@
 use core::panic;
-use rust_playground::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
-use rust_playground::SERVER_PUBLISHER_SOCKET_ADDRS;
-use rust_playground::ZEROMQ_FFI_ZERO_FLAG;
+use rust_impl::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
+use rust_impl::SERVER_PUBLISHER_SOCKET_ADDRS;
+use rust_impl::ZEROMQ_FFI_ZERO_FLAG;
 use std::time::SystemTime;
 use zeromq_ffi::Context;
 use zeromq_ffi::Message;
