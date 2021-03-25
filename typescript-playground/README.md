@@ -1,1 +1,1 @@
-Playground for experimentation with typescript implementation of ZeroMQ.
+Implementation of broadcast pattern using typescript implementation of ZeroMQ.
