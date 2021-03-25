@@ -1,6 +1,6 @@
 {
-    "name": "typescript-playground",
-    "description": "Playground for experimenting with typescript implementation of ZeroMQ.",
+    "name": "typescript-impl",
+    "description": "Implementation of broadcast pattern using typescript implementation of ZeroMQ.",
     "version": "0.1.0",
     "license": "UNLICENSED",
     "scripts": {

@@ -4,19 +4,19 @@ import {
     message_content_length,
     send_messages_timeout_millis,
     format_endpoint,
-    server_router_socket_addr,
+    broadcaster_router_socket_addr,
     count_of_messages_that_should_be_sended_every_timeout,
 } from "./helpers";
 import { RequestData } from "./types/requestData";
 
-async function run_sender(server_router_socket_addr: string) {
+async function run_sender(broadcaster_router_socket_addr: string) {
     const sender = new zeromq.Dealer();
 
     console.log("init sender");
 
-    sender.connect(format_endpoint(server_router_socket_addr));
+    sender.connect(format_endpoint(broadcaster_router_socket_addr));
 
-    console.log("sender connected");
+    console.log("sender connected to broadcaster");
 
     let total_sended = 0;
     for (;;) {
@@ -48,4 +48,4 @@ async function run_sender(server_router_socket_addr: string) {
     }
 }
 
-run_sender(server_router_socket_addr).catch((e) => console.error(e));
+run_sender(broadcaster_router_socket_addr).catch((e) => console.error(e));
