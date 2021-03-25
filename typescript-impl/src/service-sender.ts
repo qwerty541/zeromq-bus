@@ -16,7 +16,7 @@ async function run_sender(broadcaster_router_socket_addr: string) {
 
     sender.connect(format_endpoint(broadcaster_router_socket_addr));
 
-    console.log("sender connected to broadcaster");
+    console.log("sender has connected to broadcaster");
 
     let total_sended = 0;
     for (;;) {

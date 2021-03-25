@@ -15,7 +15,7 @@ async function run_receiver(broadcaster_publishers_socket_addrs: Array<string>) 
         receiver.subscribe();
     }
 
-    console.log("receiver connected to all broadcaster publishers");
+    console.log("receiver has connected to all broadcaster publishers");
 
     let total_received = 0;
     for (;;) {
