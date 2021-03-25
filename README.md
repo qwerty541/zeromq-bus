@@ -1,1 +1,1 @@
-Playground for experimentation with different implementations of ZeroMQ
+Simple implementation of broadcast pattern using ZeroMQ
