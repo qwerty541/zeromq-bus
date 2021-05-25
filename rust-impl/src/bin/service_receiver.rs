@@ -1,13 +1,13 @@
 use core::panic;
 use rust_impl::BROADCASTER_PUBLISHERS_SOCKET_ADDRS;
 use rust_impl::COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
+use rust_impl::ZEROMQ_ZERO_FLAG;
 use std::time::SystemTime;
-use zeromq::Socket;
-use zeromq::SocketRecv;
-use zeromq::SubSocket;
+use zmq::Context;
+use zmq::Message;
+use zmq::SocketType;
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() {
+fn main() {
     // Init environment logger.
     env_logger::builder()
         .is_test(true)
@@ -15,14 +15,17 @@ async fn main() {
         .try_init()
         .expect("failed to initialize environment logger");
 
-    let mut socket = SubSocket::new();
+    let context = Context::new();
+
+    let socket = context
+        .socket(SocketType::SUB)
+        .expect("failed to init subscriber socket");
 
     log::debug!("init receiver");
 
     for publisher_addr in BROADCASTER_PUBLISHERS_SOCKET_ADDRS.iter() {
         socket
             .connect(publisher_addr.as_str())
-            .await
             .unwrap_or_else(|error| {
                 panic!(
                     "connection to broadcaster dealer socket '{}' failed with: {}",
@@ -30,7 +33,7 @@ async fn main() {
                 )
             });
 
-        socket.subscribe("").await.unwrap_or_else(|error| {
+        socket.set_subscribe(b"").unwrap_or_else(|error| {
             panic!(
                 "subscription to broadcaster dealer socket '{}' failed with: {}",
                 publisher_addr, error
@@ -44,23 +47,23 @@ async fn main() {
     );
 
     let mut total_received = 0;
-    'receive_messages: loop {
-        let _message = match socket.recv().await {
-            Ok(message) => message,
-            Err(e) => {
-                log::error!("failed to receive message: {}", e);
-                continue 'receive_messages;
+    loop {
+        let mut message = Message::new();
+
+        socket
+            .recv(&mut message, ZEROMQ_ZERO_FLAG)
+            .expect("failed to receive message");
+
+        if !message.get_more() {
+            total_received += 1;
+
+            if total_received % COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT == 0 {
+                log::debug!(
+                    "{:?} | received {} messages",
+                    SystemTime::now(),
+                    total_received
+                );
             }
-        };
-
-        total_received += 1;
-
-        if total_received % COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT == 0 {
-            log::debug!(
-                "{:?} | received {} messages",
-                SystemTime::now(),
-                total_received
-            );
         }
     }
 }

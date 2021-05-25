@@ -2,21 +2,20 @@ use rand::distributions::Alphanumeric;
 use rand::thread_rng;
 use rand::Rng;
 use rust_impl::RequestData;
-use rust_impl::COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
-use rust_impl::MESSAGE_CONTENT_LENGTH;
 use rust_impl::BROADCASTER_ROUTER_SOCKET_ADDR;
-use rust_impl::ZEROMQ_FFI_ZERO_FLAG;
+use rust_impl::COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
+use rust_impl::MESSAGE_CONTENT_LENGTH;
 use rust_impl::ZEROMQ_MESSAGE_SEND_TIMEOUT_MILLIS;
+use rust_impl::ZEROMQ_ZERO_FLAG;
 use std::convert::From;
 use std::iter;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
 use std::time::SystemTime;
-use zeromq_ffi::Context;
-use zeromq_ffi::Message;
-use zeromq_ffi::SocketType;
-use zmq as zeromq_ffi;
+use zmq::Context;
+use zmq::Message;
+use zmq::SocketType;
 
 fn main() {
     env_logger::builder()
@@ -54,13 +53,13 @@ fn main() {
         .to_string();
         let start_send = Instant::now();
 
-        for _ in 1..=COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT {
+        for _ in 1..=COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT {
             sender
-                .send(Message::from(message_string.as_str()), ZEROMQ_FFI_ZERO_FLAG)
+                .send(Message::from(message_string.as_str()), ZEROMQ_ZERO_FLAG)
                 .expect("sender failed to send message");
         }
 
-        total_sended += COUNT_OF_ZEROMQ_FFI_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
+        total_sended += COUNT_OF_ZEROMQ_MESSAGES_THAT_SHOULD_BE_SENT_EVERY_TIMEOUT;
 
         log::debug!(
             "{:?} | total sended {} messages",
