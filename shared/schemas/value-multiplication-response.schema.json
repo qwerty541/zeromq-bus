@@ -1,0 +1,15 @@
+{
+    "$schema": "./message.schema.json",
+    "kind": 2,
+    "about": "Example response with multiplication result",
+    "type": "object",
+    "required": [
+        "result"
+    ],
+    "properties": {
+        "result": {
+            "type": "integer"
+        }
+    },
+    "additionalProperties": false
+}
