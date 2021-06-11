@@ -24,5 +24,5 @@
 
 pub mod codec;
 pub mod kind;
-pub mod template;
 pub mod messages;
+pub mod template;
