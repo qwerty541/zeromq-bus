@@ -1,35 +1,91 @@
 use core::panic;
-use std::convert::Into;
+use std::convert::From;
 use std::fmt;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::RwLock;
 use std::time::Instant;
 use zmq::Socket;
 
+//-----------------------------------------------------------------------------------------
+// DeadLockSafeRwLock
+//-----------------------------------------------------------------------------------------
+
 #[derive(Debug, Clone)]
-pub struct MutexLock<T> {
-    lock: Arc<Mutex<T>>,
-    identifier: String,
+pub struct DeadLockSafeRwLock<T>(Arc<RwLock<T>>);
+
+impl<T> DeadLockSafeRwLock<T> {
+    pub fn new(value: T) -> Self {
+        Self(Arc::new(RwLock::new(value)))
+    }
+
+    pub fn read<F: FnOnce(&T) -> O + 'static, O: 'static>(&self, function: F) -> O {
+        let read_guard = self.0.read().unwrap_or_else(|_| panic!("rw lock poisoned"));
+
+        function(&*read_guard)
+    }
+
+    pub fn write<F: FnOnce(&mut T) -> O + 'static, O: 'static>(&self, function: F) -> O {
+        let mut write_guard = self
+            .0
+            .write()
+            .unwrap_or_else(|_| panic!("rw lock poisoned"));
+
+        function(&mut *write_guard)
+    }
 }
 
-impl<T: 'static> MutexLock<T> {
-    pub fn new<I: Into<String>>(value: T, identifier: I) -> Self {
-        Self {
-            lock: Arc::new(Mutex::new(value)),
-            identifier: identifier.into(),
-        }
+impl<T: Default> Default for DeadLockSafeRwLock<T> {
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
+
+impl<T> From<T> for DeadLockSafeRwLock<T> {
+    fn from(value: T) -> Self {
+        Self::new(value)
+    }
+}
+
+//-----------------------------------------------------------------------------------------
+// DeadLockSafeMutex
+//-----------------------------------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct DeadLockSafeMutex<T>(Arc<Mutex<T>>);
+
+impl<T> DeadLockSafeMutex<T> {
+    pub fn new(value: T) -> Self {
+        Self(Arc::new(Mutex::new(value)))
     }
 
     pub fn lock<F: FnOnce(&mut T) -> O + 'static, O: 'static>(&self, function: F) -> O {
         let mut lock_guard = self
-            .lock
+            .0
             .lock()
-            .unwrap_or_else(|error| panic!("failed to lock mutex because of: {}", error));
+            .unwrap_or_else(|_| panic!("mutex lock poisoned"));
+
         function(&mut *lock_guard)
     }
 }
+
+impl<T: Default> Default for DeadLockSafeMutex<T> {
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
+
+impl<T> From<T> for DeadLockSafeMutex<T> {
+    fn from(value: T) -> Self {
+        Self::new(value)
+    }
+}
+
+//-----------------------------------------------------------------------------------------
+// BusPublisherData
+//-----------------------------------------------------------------------------------------
 
 #[must_use]
 pub struct BusPublisherData {

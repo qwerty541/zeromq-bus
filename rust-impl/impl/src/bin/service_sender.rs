@@ -27,7 +27,8 @@ use futures::select;
 use futures::FutureExt;
 use rand::thread_rng;
 use rand::Rng;
-use rust_impl::MutexLock;
+use rust_impl::DeadLockSafeMutex;
+use rust_impl::DeadLockSafeRwLock;
 use rust_impl::BUS_PUBLISHERS_SOCKET_ADDRS;
 use rust_impl::BUS_ROUTER_SOCKET_ADDR;
 use rust_impl::LOG_LEVEL;
@@ -66,8 +67,8 @@ use zmq::SocketType;
 
 const AWAITING_REQUESTS_MAX_DURATION: Duration = Duration::from_millis(1000_u64);
 
-type MaybeWakerStorage = MutexLock<Option<Waker>>;
-type AwaitingRequestsStorage = MutexLock<HashMap<Uuid, RequestData>>;
+type MaybeWakerStorage = DeadLockSafeMutex<Option<Waker>>;
+type AwaitingRequestsStorage = DeadLockSafeRwLock<HashMap<Uuid, RequestData>>;
 
 #[derive(Debug, Clone)]
 struct RequestData {
@@ -90,7 +91,7 @@ impl RequestData {
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 struct EmptyStorageFuture {
     awaiting_requests_storage: AwaitingRequestsStorage,
-    maybe_waker_storage: MaybeWakerStorage,
+    maybe_empty_storage_future_waker: MaybeWakerStorage,
 }
 
 impl Future for EmptyStorageFuture {
@@ -99,15 +100,15 @@ impl Future for EmptyStorageFuture {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.as_ref();
 
-        if this
-            .awaiting_requests_storage
-            .lock(move |awaiting_requests_storage| awaiting_requests_storage.is_empty())
-        {
+        if this.awaiting_requests_storage.read(HashMap::is_empty) {
             Poll::Ready(())
         } else {
             let waker = cx.waker().clone();
-            this.maybe_waker_storage
-                .lock(move |maybe_waker_storage| *maybe_waker_storage = Some(waker));
+            this.maybe_empty_storage_future_waker.lock(
+                move |maybe_empty_storage_future_waker| {
+                    *maybe_empty_storage_future_waker = Some(waker)
+                },
+            );
             Poll::Pending
         }
     }
@@ -161,9 +162,8 @@ fn main() {
     env_logger::init();
 
     let context = ZmqContext::new();
-    let awaiting_requests_storage: AwaitingRequestsStorage =
-        MutexLock::new(HashMap::new(), "awaiting requests storage");
-    let maybe_waker_storage: MaybeWakerStorage = MutexLock::new(None, "maybe waker storage");
+    let awaiting_requests_storage: AwaitingRequestsStorage = DeadLockSafeRwLock::default();
+    let maybe_empty_storage_future_waker: MaybeWakerStorage = DeadLockSafeMutex::default();
 
     let sender = context
         .socket(SocketType::DEALER)
@@ -208,7 +208,7 @@ fn main() {
 
     let mut total_received_messages_count = 0;
     let awaiting_requests_storage_clone = awaiting_requests_storage.clone();
-    let maybe_waker_storage_first_clone = maybe_waker_storage.clone();
+    let maybe_empty_storage_future_waker_clone = maybe_empty_storage_future_waker.clone();
 
     log::debug!("[SYSTEM] running messages receiving loop");
 
@@ -245,7 +245,7 @@ fn main() {
 
         let (uuid, message_payload_bytes) = decode_message_uuid(message_bytes_without_kind);
 
-        match awaiting_requests_storage_clone.lock(move |awaiting_requests_storage| {
+        match awaiting_requests_storage_clone.read(move |awaiting_requests_storage| {
             awaiting_requests_storage.get(&uuid).cloned()
         }) {
             Some(RequestData {
@@ -281,11 +281,9 @@ fn main() {
 
                 // Drop copy allowed because dropped value is not written in any variable.
                 #[allow(clippy::drop_copy)]
-                drop(
-                    awaiting_requests_storage_clone.lock(move |awaiting_requests_storage| {
-                        awaiting_requests_storage.remove(&uuid)
-                    }),
-                );
+                drop(awaiting_requests_storage_clone.write(
+                    move |awaiting_requests_storage| awaiting_requests_storage.remove(&uuid),
+                ));
 
                 log::trace!(
                     "[RECEIVER] request {} completed and removed from storage",
@@ -293,22 +291,23 @@ fn main() {
                 );
 
                 let is_awaiting_requests_storage_empty =
-                    awaiting_requests_storage_clone.lock(move |awaiting_requests_storage| {
+                    awaiting_requests_storage_clone.read(move |awaiting_requests_storage| {
                         awaiting_requests_storage.is_empty()
                     });
                 if is_awaiting_requests_storage_empty {
-                    maybe_waker_storage_first_clone.lock(move |maybe_waker_storage| {
-                        if let Some(waker) = maybe_waker_storage {
-                            waker.clone().wake();
-                            *maybe_waker_storage = None;
-                        }
-                    });
-
-                    log::trace!("[RECEIVER] sent signal to start new requests group");
-                } else {
-                    let incomplete_requests_count = awaiting_requests_storage_clone.lock(
-                        move |awaiting_requests_storage| awaiting_requests_storage.len(),
+                    maybe_empty_storage_future_waker_clone.lock(
+                        move |maybe_empty_storage_future_waker| {
+                            if let Some(waker) = maybe_empty_storage_future_waker {
+                                waker.clone().wake();
+                                *maybe_empty_storage_future_waker = None;
+                            }
+                        },
                     );
+
+                    log::trace!("[RECEIVER] sent signal to start send new requests group");
+                } else {
+                    let incomplete_requests_count =
+                        awaiting_requests_storage_clone.read(HashMap::len);
                     log::trace!(
                         "[RECEIVER] {} incomplete requests still remained",
                         incomplete_requests_count
@@ -358,16 +357,22 @@ fn main() {
             let resend_requests: Rc<VecDeque<(Uuid, RequestData)>> =
                 Rc::new(VecDeque::default());
 
-            // Wait until all request are complete with timeout of 1000 millis. If requests
-            // not completed before timeout duration has elapsed we resend them.
+            // Wait until all already sent request are complete with timeout of 1000 millis.
+            // If requests not completed before timeout duration has elapsed we resend them.
+            //
+            // Allowed `&mut &mut` because this code is generated by `select!()` macro and
+            // cannot be edited.
             #[allow(clippy::mut_mut)]
             block_on(async {
                 select! {
                     () = EmptyStorageFuture {
                         awaiting_requests_storage: awaiting_requests_storage.clone(),
-                        maybe_waker_storage: maybe_waker_storage.clone(),
+                        maybe_empty_storage_future_waker: maybe_empty_storage_future_waker.clone(),
                     }.fuse() => {},
-                    () = SleepFuture::new(AWAITING_REQUESTS_MAX_DURATION, waker_channel_sender.clone()).fuse() => {
+                    () = SleepFuture::new(
+                        AWAITING_REQUESTS_MAX_DURATION,
+                        waker_channel_sender.clone()
+                    ).fuse() => {
                         should_resend_requests = true;
                     },
                 }
@@ -376,7 +381,7 @@ fn main() {
             let mut resend_requests_clone = Rc::clone(&resend_requests);
 
             if should_resend_requests {
-                awaiting_requests_storage.lock(move |awaiting_requests_storage| {
+                awaiting_requests_storage.read(move |awaiting_requests_storage| {
                     let resend_requests_iter = awaiting_requests_storage
                         .iter()
                         .map(|(uuid, request_data)| (*uuid, request_data.clone()));
@@ -445,7 +450,7 @@ fn main() {
                     // Drop copy allowed because dropped value is not written in any variable.
                     #[allow(clippy::drop_copy)]
                     drop(
-                        awaiting_requests_storage.lock(move |awaiting_requests_storage| {
+                        awaiting_requests_storage.write(move |awaiting_requests_storage| {
                             awaiting_requests_storage.insert(
                                 current_uuid,
                                 RequestData::new(current_value, current_multiplier),

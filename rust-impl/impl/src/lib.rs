@@ -47,7 +47,8 @@ pub const RUST_LOG_ENVIRONMENT_VARIABLE_NAME: &str = "RUST_LOG";
 
 mod helpers;
 pub use helpers::BusPublisherData;
-pub use helpers::MutexLock;
+pub use helpers::DeadLockSafeMutex;
+pub use helpers::DeadLockSafeRwLock;
 
 pub use __format_endpoint as format_endpoint;
 pub use __BUS_PUBLISHERS_SOCKET_ADDRS as BUS_PUBLISHERS_SOCKET_ADDRS;
