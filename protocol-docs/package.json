@@ -1,0 +1,19 @@
+{
+    "name": "zeromq-messages-schemas",
+    "description": "Tool for generating markdown specification for communication system protocol.",
+    "version": "0.1.0",
+    "license": "UNLICENSED",
+    "scripts": {
+        "generate-specs": "ts-node -P tsconfig.json src/generate-specs.ts",
+        "format": "prettier --write ./src/"
+    },
+    "dependencies": {
+        "@types/node": "14.14.35",
+        "camelcase": "6.2.0",
+        "json-schema-to-typescript": "10.1.3",
+        "prettier": "2.2.1",
+        "ts-node": "9.1.1",
+        "tslint": "6.1.3",
+        "typescript": "4.2.3"
+    }
+}
