@@ -47,10 +47,11 @@ async function run(): Promise<void> {
             result += fileContent.about + "\n\n";
 
             result += "```ts\n";
-            result += await compileFromFile(filePath, {
+            const interfaceCode = await compileFromFile(filePath, {
                 style: prettierRc,
                 bannerComment: "",
             });
+            result += interfaceCode.substr(interfaceCode.indexOf(" ") + 1);
             result += "```\n\n";
         }
     }

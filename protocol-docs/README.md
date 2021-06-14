@@ -21,7 +21,7 @@ Field          | Length             | Description                               
 Example request for multiplication of value on multiplier
 
 ```ts
-export interface ValueMultiplicationRequest {
+interface ValueMultiplicationRequest {
     value: number;
     multiplier: number;
 }
@@ -32,7 +32,7 @@ export interface ValueMultiplicationRequest {
 Example response with multiplication result
 
 ```ts
-export interface ValueMultiplicationResponse {
+interface ValueMultiplicationResponse {
     result: number;
 }
 ```
