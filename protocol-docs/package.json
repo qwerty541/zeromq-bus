@@ -5,15 +5,15 @@
     "license": "UNLICENSED",
     "scripts": {
         "generate-specs": "ts-node -P tsconfig.json src/generate-specs.ts",
-        "format": "prettier --write ./src/"
+        "format": "prettier \"./src/*.ts\" --write"
     },
     "dependencies": {
-        "@types/node": "14.14.35",
+        "@types/node": "15.12.2",
         "camelcase": "6.2.0",
-        "json-schema-to-typescript": "10.1.3",
-        "prettier": "2.2.1",
-        "ts-node": "9.1.1",
+        "json-schema-to-typescript": "10.1.4",
+        "prettier": "2.3.1",
+        "ts-node": "10.0.0",
         "tslint": "6.1.3",
-        "typescript": "4.2.3"
+        "typescript": "4.3.2"
     }
 }
