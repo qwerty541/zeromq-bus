@@ -1,6 +1,5 @@
 {
     "$schema": "./message.schema.json",
-    "kind": 1,
     "about": "Example request for multiplication of value on multiplier",
     "type": "object",
     "required": [

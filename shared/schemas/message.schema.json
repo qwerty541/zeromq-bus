@@ -1,16 +1,12 @@
 {
     "$schema": "https://json-schema.org/draft-04/schema#",
     "required": [
-        "kind",
         "about",
         "type",
         "properties",
         "additionalProperties"
     ],
     "properties": {
-        "kind": {
-            "type": "integer"
-        },
         "about": {
             "type": "string"
         },

@@ -22,12 +22,11 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::missing_errors_doc)]
 
-use core::panic;
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use quote::quote;
-use std::clone::Clone;
 use std::convert::AsRef;
+use std::convert::From;
 use std::convert::Into;
 use std::fs;
 use std::io;
@@ -39,7 +38,6 @@ use std::string::ToString;
 
 type Kind = u32;
 type Title = String;
-type Schema = String;
 type FileName = String;
 
 const PATH_TO_SCHEMAS: &str = "../shared/schemas";
@@ -51,11 +49,9 @@ const EXCLUDE: &[&str] = &["message.schema.json"];
 pub fn generate_zeromq_messages_kinds_enum(_input: TokenStream) -> TokenStream {
     let schemas_directory_entries_paths = get_schemas_directory_entries_paths(PATH_TO_SCHEMAS)
         .expect("failed to get schemas directory entries path");
-    let mut messages_schemas_strings: Vec<Schema> =
-        Vec::with_capacity(schemas_directory_entries_paths.len());
     let mut file_name_strings: Vec<FileName> =
         Vec::with_capacity(schemas_directory_entries_paths.len());
-    for path in schemas_directory_entries_paths {
+    for path in &schemas_directory_entries_paths {
         let file_name_string = path
             .file_name()
             .expect("failed to get file name OsStr from path")
@@ -66,36 +62,23 @@ pub fn generate_zeromq_messages_kinds_enum(_input: TokenStream) -> TokenStream {
             && file_name_string.ends_with(SCHEMA_EXTENSION)
             && (!EXCLUDE.contains(&file_name_string.as_str()))
         {
-            messages_schemas_strings.push(fs::read_to_string(path.clone()).unwrap_or_else(
-                |error| panic!("failed to read {:?} content to string: {}", path, error),
-            ));
-
             file_name_strings.push(file_name_string);
         }
     }
 
-    assert_eq!(messages_schemas_strings.len(), file_name_strings.len());
+    assert!(schemas_directory_entries_paths.len() >= file_name_strings.len());
 
-    let mut kinds: Vec<Kind> = Vec::with_capacity(messages_schemas_strings.len());
-    let mut titles: Vec<Title> = Vec::with_capacity(messages_schemas_strings.len());
-    for current_index in 0..messages_schemas_strings.len() {
-        let json: serde_json::Value =
-            serde_json::from_str(messages_schemas_strings[current_index].as_str())
-                .expect("failed to create json from string");
-        #[allow(clippy::cast_possible_truncation)]
-        let kind = json
-            .get("kind")
-            .expect("failed to get kind property from json")
-            .as_u64()
-            .expect("not integer written in kind property") as Kind;
-        kinds.push(kind);
+    let mut kinds: Vec<Kind> = Vec::with_capacity(file_name_strings.len());
+    let mut titles: Vec<Title> = Vec::with_capacity(file_name_strings.len());
+    for file_name_string in file_name_strings {
+        let splitted_file_name_string = file_name_string.split('.').collect::<Vec<&'_ str>>();
 
-        let title = file_name_strings[current_index]
-            .clone()
-            .split(SCHEMA_EXTENSION)
-            .collect::<Vec<&'_ str>>()[0]
-            .to_string();
-        titles.push(title);
+        kinds.push(
+            splitted_file_name_string[0]
+                .parse::<u32>()
+                .expect("failed to get kind from string"),
+        );
+        titles.push(Title::from(splitted_file_name_string[1]));
     }
 
     assert_eq!(kinds.len(), titles.len());
@@ -160,8 +143,8 @@ pub fn generate_zeromq_messages_structs(_input: TokenStream) -> TokenStream {
     let mut output = quote! {};
     for current_index in 0..file_name_strings.len() {
         let struct_name_with_first_symbol_lower_case = file_name_strings[current_index]
-            .split(SCHEMA_EXTENSION)
-            .collect::<Vec<&'_ str>>()[0]
+            .split('.')
+            .collect::<Vec<&'_ str>>()[1]
             .to_string()
             .to_camel_case();
         let struct_name_string = uppercase_first(struct_name_with_first_symbol_lower_case);
