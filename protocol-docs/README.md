@@ -16,7 +16,7 @@ Field          | Length             | Description                               
 
 ## Enumeration of interfaces for messages content.
 
-### 1: ValueMultiplicationRequest
+### 001: ValueMultiplicationRequest
 
 Example request for multiplication of value on multiplier
 
@@ -27,7 +27,7 @@ interface ValueMultiplicationRequest {
 }
 ```
 
-### 2: ValueMultiplicationResponse
+### 002: ValueMultiplicationResponse
 
 Example response with multiplication result
 

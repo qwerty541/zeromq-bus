@@ -35,12 +35,13 @@ async function run(): Promise<void> {
                 fs.readFileSync(filePath as fs.PathLike, BUFFER_ENCODING),
                 undefined,
             );
+            const splittedFileName = fileName.split(".", undefined);
 
             result +=
                 "### " +
-                fileContent.kind +
+                splittedFileName[0] +
                 ": " +
-                camelcase(fileName.split(SCHEMA_EXTENSION, undefined)[0], {
+                camelcase(splittedFileName[1], {
                     pascalCase: true,
                 } as camelcase.Options) +
                 "\n\n";
