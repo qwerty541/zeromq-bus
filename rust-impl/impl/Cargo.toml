@@ -11,7 +11,7 @@ env_logger = "0.8.4"
 futures = "0.3.15"
 lazy_static = "1.4.0"
 log = "0.4.14"
-rand = "0.8.3"
+rand = "0.8.4"
 serde_json = "1.0.64"
 zeromq-messages = { path = "../zeromq-messages/" }
 zmq = "0.9.2"
