@@ -25,6 +25,7 @@
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use quote::quote;
+use regex::Regex;
 use std::convert::AsRef;
 use std::convert::From;
 use std::convert::Into;
@@ -40,9 +41,10 @@ type Kind = u32;
 type Title = String;
 type FileName = String;
 
-const PATH_TO_SCHEMAS: &str = "../shared/schemas";
+const PATH_TO_SCHEMAS: &str = "../shared/schemas/";
 const SCHEMA_EXTENSION: &str = ".schema.json";
-const EXCLUDE: &[&str] = &["message.schema.json"];
+const EXPECTED_SCHEMA_FILE_NAME_REGEX_STR: &str =
+    "(\\d{3})(\\.{1})(.+)(\\.{1})(schema{1})(\\.{1})(json{1})";
 
 /// Procedural macro for generating enumeration of messages kinds.
 #[proc_macro]
@@ -51,6 +53,8 @@ pub fn generate_zeromq_messages_kinds_enum(_input: TokenStream) -> TokenStream {
         .expect("failed to get schemas directory entries path");
     let mut file_name_strings: Vec<FileName> =
         Vec::with_capacity(schemas_directory_entries_paths.len());
+    let regex = Regex::new(EXPECTED_SCHEMA_FILE_NAME_REGEX_STR)
+        .expect("failed to initialize expected schema file name regex");
     for path in &schemas_directory_entries_paths {
         let file_name_string = path
             .file_name()
@@ -60,7 +64,7 @@ pub fn generate_zeromq_messages_kinds_enum(_input: TokenStream) -> TokenStream {
             .to_string();
         if (!path.is_dir())
             && file_name_string.ends_with(SCHEMA_EXTENSION)
-            && (!EXCLUDE.contains(&file_name_string.as_str()))
+            && regex.is_match(file_name_string.as_str())
         {
             file_name_strings.push(file_name_string);
         }
@@ -115,6 +119,8 @@ pub fn generate_zeromq_messages_structs(_input: TokenStream) -> TokenStream {
         Vec::with_capacity(schemas_directory_entries_paths.len());
     let mut paths_to_files: Vec<String> =
         Vec::with_capacity(schemas_directory_entries_paths.len());
+    let regex = Regex::new(EXPECTED_SCHEMA_FILE_NAME_REGEX_STR)
+        .expect("failed to initialize expected schema file name regex");
     for path in schemas_directory_entries_paths {
         let file_name_string = path
             .file_name()
@@ -125,7 +131,7 @@ pub fn generate_zeromq_messages_structs(_input: TokenStream) -> TokenStream {
 
         if (!path.is_dir())
             && file_name_string.ends_with(SCHEMA_EXTENSION)
-            && (!EXCLUDE.contains(&file_name_string.as_str()))
+            && regex.is_match(file_name_string.as_str())
         {
             file_name_strings.push(file_name_string);
 
