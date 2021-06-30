@@ -22,12 +22,8 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::missing_errors_doc)]
 
-use futures::executor::block_on;
-use futures::select;
-use futures::FutureExt;
 use rand::thread_rng;
 use rand::Rng;
-use rust_impl::DeadLockSafeMutex;
 use rust_impl::DeadLockSafeRwLock;
 use rust_impl::BUS_PUBLISHERS_SOCKET_ADDRS;
 use rust_impl::BUS_ROUTER_SOCKET_ADDR;
@@ -41,14 +37,8 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::convert::From;
 use std::env;
-use std::future::Future;
 use std::iter::Iterator;
-use std::pin::Pin;
 use std::rc::Rc;
-use std::sync::mpsc;
-use std::task::Context;
-use std::task::Poll;
-use std::task::Waker;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
@@ -65,9 +55,8 @@ use zmq::Context as ZmqContext;
 use zmq::Message;
 use zmq::SocketType;
 
-const AWAITING_REQUESTS_MAX_DURATION: Duration = Duration::from_millis(1000_u64);
+const RESEND_REQUESTS_EVERY_DURATION: Duration = Duration::from_secs(5_u64);
 
-type MaybeWakerStorage = DeadLockSafeMutex<Option<Waker>>;
 type AwaitingRequestsStorage = DeadLockSafeRwLock<HashMap<Uuid, RequestData>>;
 
 #[derive(Debug, Clone)]
@@ -75,6 +64,7 @@ struct RequestData {
     value: i64,
     multiplier: i64,
     expected_result: i64,
+    last_send_attempt_time: Instant,
 }
 
 impl RequestData {
@@ -83,73 +73,17 @@ impl RequestData {
             value,
             multiplier,
             expected_result: value * multiplier,
+            last_send_attempt_time: Instant::now(),
         }
     }
-}
 
-#[derive(Debug, Clone)]
-#[must_use = "futures do nothing unless you `.await` or poll them"]
-struct EmptyStorageFuture {
-    awaiting_requests_storage: AwaitingRequestsStorage,
-    maybe_empty_storage_future_waker: MaybeWakerStorage,
-}
-
-impl Future for EmptyStorageFuture {
-    type Output = ();
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let this = self.as_ref();
-
-        if this.awaiting_requests_storage.read(HashMap::is_empty) {
-            Poll::Ready(())
-        } else {
-            let waker = cx.waker().clone();
-            this.maybe_empty_storage_future_waker.lock(
-                move |maybe_empty_storage_future_waker| {
-                    *maybe_empty_storage_future_waker = Some(waker)
-                },
-            );
-            Poll::Pending
-        }
+    fn should_resend_request(&self) -> bool {
+        Instant::now().duration_since(self.last_send_attempt_time)
+            > RESEND_REQUESTS_EVERY_DURATION
     }
-}
 
-#[derive(Debug, Clone)]
-#[must_use = "futures do nothing unless you `.await` or poll them"]
-struct SleepFuture {
-    initialized_on: Instant,
-    sleep_for: Duration,
-    waker_channel_sender: mpsc::Sender<(Waker, Duration)>,
-}
-
-impl SleepFuture {
-    fn new(
-        sleep_for: Duration,
-        waker_channel_sender: mpsc::Sender<(Waker, Duration)>,
-    ) -> Self {
-        Self {
-            initialized_on: Instant::now(),
-            sleep_for,
-            waker_channel_sender,
-        }
-    }
-}
-
-impl Future for SleepFuture {
-    type Output = ();
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let this = self.as_ref();
-
-        Instant::now()
-            .duration_since(this.initialized_on)
-            .checked_sub(this.sleep_for)
-            .map_or(Poll::Ready(()), |left_duration| {
-                this.waker_channel_sender
-                    .send((cx.waker().clone(), left_duration))
-                    .expect("waker channel receiver droppped");
-                Poll::Pending
-            })
+    fn update_last_send_attempt_time(&mut self) {
+        self.last_send_attempt_time = Instant::now();
     }
 }
 
@@ -163,7 +97,6 @@ fn main() {
 
     let context = ZmqContext::new();
     let awaiting_requests_storage: AwaitingRequestsStorage = DeadLockSafeRwLock::default();
-    let maybe_empty_storage_future_waker: MaybeWakerStorage = DeadLockSafeMutex::default();
 
     let sender = context
         .socket(SocketType::DEALER)
@@ -208,7 +141,6 @@ fn main() {
 
     let mut total_received_messages_count = 0;
     let awaiting_requests_storage_clone = awaiting_requests_storage.clone();
-    let maybe_empty_storage_future_waker_clone = maybe_empty_storage_future_waker.clone();
 
     log::debug!("[SYSTEM] running messages receiving loop");
 
@@ -290,30 +222,6 @@ fn main() {
                     uuid
                 );
 
-                let is_awaiting_requests_storage_empty =
-                    awaiting_requests_storage_clone.read(move |awaiting_requests_storage| {
-                        awaiting_requests_storage.is_empty()
-                    });
-                if is_awaiting_requests_storage_empty {
-                    maybe_empty_storage_future_waker_clone.lock(
-                        move |maybe_empty_storage_future_waker| {
-                            if let Some(waker) = maybe_empty_storage_future_waker {
-                                waker.clone().wake();
-                                *maybe_empty_storage_future_waker = None;
-                            }
-                        },
-                    );
-
-                    log::trace!("[RECEIVER] sent signal to start send new requests group");
-                } else {
-                    let incomplete_requests_count =
-                        awaiting_requests_storage_clone.read(HashMap::len);
-                    log::trace!(
-                        "[RECEIVER] {} incomplete requests still remained",
-                        incomplete_requests_count
-                    );
-                }
-
                 if total_received_messages_count % REQUESTS_COUNT_INSIDE_ONE_GROUP == 0 {
                     log::debug!(
                         "[RECEIVER] {:?} - total received {} messages",
@@ -328,65 +236,38 @@ fn main() {
         }
     }));
 
-    log::debug!("[SYSTEM] running waker loop");
-
-    let (waker_channel_sender, waker_channel_receiver) = mpsc::channel::<(Waker, Duration)>();
-
-    drop(thread::spawn(move || 'sleep_futures_waker: loop {
-        match waker_channel_receiver.recv() {
-            Ok((waker, left_duration)) => {
-                thread::sleep(left_duration);
-                waker.wake();
-                continue 'sleep_futures_waker;
-            }
-            Err(_) => {
-                unreachable!("waker channel sender dropped");
-            }
-        }
-    }));
-
     log::debug!("[SYSTEM] running messages sending loop");
 
     let mut total_sended_messages_count = 0;
     let sender_loop_join_handle = thread::spawn(move || {
         let mut rng = thread_rng();
+        let mut last_resend_check = Instant::now();
 
         #[allow(unused_labels)]
         'send_messages: loop {
-            let mut should_resend_requests = false;
+            let should_resend_requests = Instant::now().duration_since(last_resend_check)
+                > RESEND_REQUESTS_EVERY_DURATION;
             let resend_requests: Rc<VecDeque<(Uuid, RequestData)>> =
                 Rc::new(VecDeque::default());
-
-            // Wait until all already sent request are complete with timeout of 1000 millis.
-            // If requests not completed before timeout duration has elapsed we resend them.
-            //
-            // Allowed `&mut &mut` because this code is generated by `select!()` macro and
-            // cannot be edited.
-            #[allow(clippy::mut_mut)]
-            block_on(async {
-                select! {
-                    () = EmptyStorageFuture {
-                        awaiting_requests_storage: awaiting_requests_storage.clone(),
-                        maybe_empty_storage_future_waker: maybe_empty_storage_future_waker.clone(),
-                    }.fuse() => {},
-                    () = SleepFuture::new(
-                        AWAITING_REQUESTS_MAX_DURATION,
-                        waker_channel_sender.clone()
-                    ).fuse() => {
-                        should_resend_requests = true;
-                    },
-                }
-            });
-
             let mut resend_requests_clone = Rc::clone(&resend_requests);
 
             if should_resend_requests {
-                awaiting_requests_storage.read(move |awaiting_requests_storage| {
+                last_resend_check = Instant::now();
+                awaiting_requests_storage.write(move |awaiting_requests_storage| {
                     let resend_requests_iter = awaiting_requests_storage
-                        .iter()
-                        .map(|(uuid, request_data)| (*uuid, request_data.clone()));
+                        .iter_mut()
+                        .filter_map(|(uuid, request_data)| {
+                            if request_data.should_resend_request() {
+                                request_data.update_last_send_attempt_time();
+                                Some((*uuid, request_data.clone()))
+                            } else {
+                                None
+                            }
+                        });
                     Rc::make_mut(&mut resend_requests_clone).extend(resend_requests_iter);
-                })
+                });
+
+                log::debug!("[SENDER] resend {} requests", resend_requests.len());
             }
 
             let mut total_messages_sent_inside_current_group = 0;
@@ -446,6 +327,7 @@ fn main() {
                 total_messages_sent_inside_current_group += 1;
                 log::trace!("> {:?}", message_bytes);
 
+                // If we resend the request, then it has already been written to the storage.
                 if !is_resend {
                     // Drop copy allowed because dropped value is not written in any variable.
                     #[allow(clippy::drop_copy)]
@@ -460,14 +342,14 @@ fn main() {
                 }
 
                 total_sended_messages_count += 1;
+            }
 
-                if total_sended_messages_count % REQUESTS_COUNT_INSIDE_ONE_GROUP == 0 {
-                    log::debug!(
-                        "[SENDER] {:?} - total sended {} messages",
-                        SystemTime::now(),
-                        total_sended_messages_count
-                    );
-                }
+            if total_sended_messages_count % REQUESTS_COUNT_INSIDE_ONE_GROUP == 0 {
+                log::debug!(
+                    "[SENDER] {:?} - total sended {} messages",
+                    SystemTime::now(),
+                    total_sended_messages_count
+                );
             }
         }
     });
