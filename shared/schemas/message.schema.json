@@ -1,24 +1,43 @@
 {
     "$schema": "https://json-schema.org/draft-04/schema#",
-    "required": [
-        "about",
-        "type",
-        "properties",
-        "additionalProperties"
-    ],
-    "properties": {
-        "about": {
-            "type": "string"
+    "allOf": [
+        {
+            "type": "object",
+            "required": [
+                "$schema",
+                "about",
+                "type"
+            ],
+            "properties": {
+                "$schema": {
+                    "type": "string"
+                },
+                "about": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "required": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "items": {
+                    "type": "object"
+                },
+                "properties": {
+                    "type": "object"
+                },
+                "additionalProperties": {
+                    "type": "boolean"
+                }
+            },
+            "additionalProperties": false
         },
-        "type": {
-            "type": "string"
-        },
-        "properties": {
-            "type": "object"
-        },
-        "additionalProperties": {
-            "type": "boolean"
+        {
+            "$ref": "https://json-schema.org/draft-04/schema#"
         }
-    },
-    "additionalProperties": true
+    ]
 }
